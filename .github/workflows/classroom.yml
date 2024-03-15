@@ -1,0 +1,51 @@
+name: Autograding Tests
+'on':
+- push
+- workflow_dispatch
+- repository_dispatch
+permissions:
+  checks: write
+  actions: read
+  contents: read
+jobs:
+  run-autograding-tests:
+    runs-on: ubuntu-latest
+    if: github.actor != 'github-classroom[bot]'
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    - name: Compile and Run for Reading
+      id: compile-and-run-for-reading
+      uses: education/autograding-command-grader@v1
+      with:
+        test-name: Compile and Run for Reading
+        setup-command: ''
+        command: make clean && make test < data.txt
+        timeout: 10
+        max-score: 10
+    - name: Run Test
+      id: run-test
+      uses: education/autograding-command-grader@v1
+      with:
+        test-name: Run Test
+        setup-command: ''
+        command: g++ -std=c++11 main.cpp && ./a.out < data.txt
+        timeout: 10
+        max-score: 10
+    - name: Pytest for employee.txt
+      id: pytest-for-employee-txt
+      uses: education/autograding-command-grader@v1
+      with:
+        test-name: Pytest for employee.txt
+        setup-command: sudo -H pip3 install pytest
+        command: pytest -rP
+        timeout: 10
+        max-score: 10
+    - name: Autograding Reporter
+      uses: education/autograding-grading-reporter@v1
+      env:
+        COMPILE-AND-RUN-FOR-READING_RESULTS: "${{steps.compile-and-run-for-reading.outputs.result}}"
+        RUN-TEST_RESULTS: "${{steps.run-test.outputs.result}}"
+        PYTEST-FOR-EMPLOYEE-TXT_RESULTS: "${{steps.pytest-for-employee-txt.outputs.result}}"
+      with:
+        runners: compile-and-run-for-reading,run-test,pytest-for-employee-txt
